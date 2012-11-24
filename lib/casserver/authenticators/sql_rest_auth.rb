@@ -31,7 +31,7 @@ class CASServer::Authenticators::SQLRestAuth < CASServer::Authenticators::SQLEnc
 
     username_column = @options[:username_column] || "email"
 
-    $LOG.debug "#{self.class}: [#{user_model}] " + "Connection pool size: #{user_model.connection_pool.instance_variable_get(:@checked_out).length}/#{user_model.connection_pool.instance_variable_get(:@connections).length}"
+    # $LOG.debug "#{self.class}: [#{user_model}] " + "Connection pool size: #{user_model.connection_pool.instance_variable_get(:@checked_out).length}/#{user_model.connection_pool.instance_variable_get(:@connections).length}"
     results = user_model.find(:all, :conditions => ["#{username_column} = ?", @username])
     user_model.connection_pool.checkin(user_model.connection)
 

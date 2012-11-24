@@ -79,7 +79,7 @@ class CASServer::Authenticators::SQL < CASServer::Authenticators::Base
     read_standard_credentials(credentials)
     raise_if_not_configured
     
-    $LOG.debug "#{self.class}: [#{user_model}] " + "Connection pool size: #{user_model.connection_pool.instance_variable_get(:@checked_out).length}/#{user_model.connection_pool.instance_variable_get(:@connections).length}"
+    # $LOG.debug "#{self.class}: [#{user_model}] " + "Connection pool size: #{user_model.connection_pool.instance_variable_get(:@checked_out).length}/#{user_model.connection_pool.instance_variable_get(:@connections).length}"
     user_model.connection_pool.checkin(user_model.connection)
        
     if matching_users.size > 0
