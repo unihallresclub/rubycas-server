@@ -1,7 +1,10 @@
+require 'casserver/authenticators/base'
+
 require 'openid'
 require 'openid/extensions/sreg'
 require 'openid/extensions/pape'
 require 'openid/store/memory'
+
 
 # CURRENTLY UNIMPLEMENTED
 # This is just starter code.

@@ -1,4 +1,5 @@
 # encoding: UTF-8
+require 'casserver/authenticators/base'
 
 # Dummy authenticator used for testing.
 # Accepts any username as valid as long as the password is "testpassword"; otherwise authentication fails.
