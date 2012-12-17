@@ -11,7 +11,7 @@ require 'timeout'
 #   authenticator:
 #     class: CASServer::Authenticators::RemoteDevise
 #     url: https://devise.url/users/sign_in.json
-#     auth_options:
+#     devise:
 #       model: user
 #       attribute: username
 #     timeout: 10
@@ -27,24 +27,25 @@ require 'timeout'
 #   attribute -- The name of the attribute used as the username. Defaults to 'email'.
 #   timeout -- Number of seconds to wait for response from Devise. Defaults to 10 seconds.
 #
-# All user account attributes are available as extra attributes. To avoid conflicts, if a :username attribute is added
-# to the extra attributes, it will be renamed to :username_devise.
+# All user account attributes returned by API on successful auth are available as extra attributes.
+# To avoid conflicts, if a :username attribute is provided to the extra attributes, it will be renamed to
+# :username_devise.
 class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
   def self.setup(options)
     raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:url]
 
-    @auth = {}
-    @auth[:model] = options[:auth_options][:model] || 'user'
-    @auth[:attribute] = options[:auth_options][:attribute] || 'email'
-    @timeout_seconds = options[:timeout] || 10
+    @devise = {}
+    @devise[:model] = options[:devise][:model] || 'user'
+    @devise[:attribute] = options[:devise][:attribute] || 'email'
+    @request_timeout = options[:timeout] || 10
   end
 
-  def self.auth
-    @auth
+  def self.devise
+    @devise
   end
 
-  def self.timeout_seconds
-    @timeout_seconds
+  def self.request_timeout
+    @request_timeout
   end
 
   def validate(credentials)
@@ -53,8 +54,8 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     return false if @username.blank? || @password.blank?
 
     auth_data = {
-      "#{auth[:model]}[#{auth[:attribute]}]"  => @username,
-      "#{auth[:model]}[password]"             => @password,
+      "#{devise[:model]}[#{devise[:attribute]}]"  => @username,
+      "#{devise[:model]}[password]"               => @password,
     }
 
     url = URI.parse(@options[:url])
@@ -71,11 +72,15 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     end
 
     begin
-      timeout(timeout_seconds) do
-        res = http.start do |conn|
-          req = Net::HTTP::Post.new(url.path)
-          req.set_form_data(auth_data,'&')
-          conn.request(req)
+      timeout(request_timeout) do
+        begin
+          res = http.start do |conn|
+            req = Net::HTTP::Post.new(url.path)
+            req.set_form_data(auth_data,'&')
+            conn.request(req)
+          end
+        rescue StandardError => e
+          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Connection Error: #{e.to_s})"
         end
 
         case res
@@ -84,18 +89,17 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
           content_type = response['content-type'].split(';')[0]
           if content_type != 'application/json'
             $LOG.error("Devise didn't return application/json content-type. Instead; #{content_type}")
-            raise CASServer::AuthenticatorError, "Login service currently broken. (Devise didn't return application/json content-type.)"
+            raise CASServer::AuthenticatorError, "Login server currently unavailable. (Returned Content-Type not application/json)"
           end
 
           begin
             json = ActiveSupport::JSON.decode(res.body)
-          rescue Exception => e
-            $LOG.error("Unable to decode Devise's JSON response. Exception: #{e}")
-            raise CASServer::AuthenticatorError, "Login service currently broken. (Unable to decode Devise's JSON response.)"
+          rescue StandardError => e
+            $LOG.error("Unable to decode Devise JSON response. Exception: #{e}")
+            raise CASServer::AuthenticatorError, "Login server currently unavailable. (Unable to decode JSON response)"
           end
 
           if json[:error]
-            $LOG.error("Unable to login user because: #{json[:error]}")
             raise CASServer::AuthenticatorError, json[:error]
           end
 
@@ -109,12 +113,13 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
           return true
         else
           $LOG.error("Unexpected response from Devise while validating credentials: #{res.inspect} ==> #{res.body}.")
-          raise CASServer::AuthenticatorError, "Unexpected response received from Devise while validating credentials."
+          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Unexpected response received while validating credentials)"
         end
       end
+
     rescue Timeout::Error
       $LOG.error("Devise did not respond to the credential validation request. We waited for #{wait_seconds.inspect} seconds before giving up.")
-      raise CASServer::AuthenticatorError, "Timeout while waiting for Devise to validate credentials."
+      raise CASServer::AuthenticatorError, "Login server currently unavailable. (Timeout while waiting to validate credentials)"
     end
 
   end
