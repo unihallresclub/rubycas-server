@@ -15,6 +15,11 @@ require 'timeout'
 #       model: user
 #       attribute: username
 #     timeout: 10
+#     proxy:
+#       host:
+#       port:
+#       username:
+#       password:
 #
 # Definitions:
 #   url -- The URL (ending in .json) of the page that login information is POSTed to.
@@ -28,18 +33,18 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
   def self.setup(options)
     raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:url]
 
-    @url = options[:url]
-    @auth_model = options[:auth_options][:model] || 'user'
-    @auth_attribute = options[:auth_options][:attribute] || 'email'
-    @timeout = options[:timeout] || 10
+    @auth = {}
+    @auth[:model] = options[:auth_options][:model] || 'user'
+    @auth[:attribute] = options[:auth_options][:attribute] || 'email'
+    @timeout_seconds = options[:timeout] || 10
   end
 
-  def configure(options)
-    super
-    @url = ''
-    @auth_model = ''
-    @auth_attribute = ''
-    @timeout = 0
+  def self.auth
+    @auth
+  end
+
+  def self.timeout_seconds
+    @timeout_seconds
   end
 
   def validate(credentials)
@@ -48,11 +53,11 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     return false if @username.blank? || @password.blank?
 
     auth_data = {
-      "#{@auth_model}[#{@auth_attribute}]"   => @username,
-      "#{@auth_model}[password]"             => @password,
+      "#{auth[:model]}[#{auth[:attribute]}]"  => @username,
+      "#{auth[:model]}[password]"             => @password,
     }
 
-    url = URI.parse(@url)
+    url = URI.parse(@options[:url])
     if @options[:proxy]
       http = Net::HTTP.Proxy(@options[:proxy][:host], @options[:proxy][:port], @options[:proxy][:username], @options[:proxy][:password]).new(url.host, url.port)
     else
@@ -66,7 +71,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     end
 
     begin
-      timeout(@timeout) do
+      timeout(timeout_seconds) do
         res = http.start do |conn|
           req = Net::HTTP::Post.new(url.path)
           req.set_form_data(auth_data,'&')
@@ -79,22 +84,22 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
           content_type = response['content-type'].split(';')[0]
           if content_type != 'application/json'
             $LOG.error("Devise didn't return application/json content-type. Instead; #{content_type}")
-            raise CASServer::AuthenticatorError, "Devise didn't return application/json content-type."
+            raise CASServer::AuthenticatorError, "Login service currently broken. (Devise didn't return application/json content-type.)"
           end
 
           begin
             json = ActiveSupport::JSON.decode(res.body)
           rescue Exception => e
             $LOG.error("Unable to decode Devise's JSON response. Exception: #{e}")
-            raise CASServer::AuthenticatorError, "Unable to decode Devise's JSON response."
+            raise CASServer::AuthenticatorError, "Login service currently broken. (Unable to decode Devise's JSON response.)"
           end
 
           if json[:error]
-            $LOG.error("Unable to login because: #{json[:error]}")
+            $LOG.error("Unable to login user because: #{json[:error]}")
             raise CASServer::AuthenticatorError, json[:error]
           end
 
-          @extra_attributes = json[@auth_model.to_sym]
+          @extra_attributes = json[auth[:model].to_sym]
 
           if @extra_attributes[:username]
             @extra_attributes[:username_devise] = @extra_attributes[:username]
