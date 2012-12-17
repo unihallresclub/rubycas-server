@@ -86,15 +86,15 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
             raise CASServer::AuthenticatorError, "Login server currently unavailable. (Unable to decode JSON response)"
           end
 
-          if json[:error]
-            raise CASServer::AuthenticatorError, json[:error] # Devise auth rejection message
+          if json.has_key? 'error'
+            raise CASServer::AuthenticatorError, json['error'] # Devise auth rejection message
           end
 
-          @extra_attributes = json[@options[:devise][:model].to_sym]
+          @extra_attributes = json[@options[:devise][:model].to_s]
 
-          if @extra_attributes[:username]
-            @extra_attributes[:username_devise] = @extra_attributes[:username]
-            @extra_attributes.delete(:username)
+          if @extra_attributes.has_key? 'username'
+            @extra_attributes['username_devise'] = @extra_attributes['username']
+            @extra_attributes.delete('username')
           end
 
           return true
