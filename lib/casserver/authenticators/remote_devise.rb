@@ -56,11 +56,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
       http = Net::HTTP.new(url.host, url.port)
     end
 
-    if url.scheme == "https"
-      http.use_ssl = true
-    else
-      http.use_ssl = false
-    end
+    http.use_ssl = (url.scheme == "https")
 
     begin
       timeout(@options[:timeout]) do
@@ -75,9 +71,9 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
         end
 
         case res
-        when Net::HTTPSuccess
+        when Net::HTTPSuccess, Net::HTTPForbidden
 
-          content_type = response['content-type'].split(';')[0]
+          content_type = res['content-type'].split(';')[0]
           if content_type != 'application/json'
             $LOG.error("Devise didn't return application/json content-type. Instead; #{content_type}")
             raise CASServer::AuthenticatorError, "Login server currently unavailable. (Returned Content-Type not application/json)"
@@ -91,7 +87,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
           end
 
           if json[:error]
-            raise CASServer::AuthenticatorError, json[:error]
+            raise CASServer::AuthenticatorError, json[:error] # Devise auth rejection message
           end
 
           @extra_attributes = json[@options[:devise][:model].to_sym]
@@ -102,14 +98,19 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
           end
 
           return true
+
+        when Net::HTTPInternalServerError
+          $LOG.error("Devise throws Internal Server Error while validating credentials: #{res.inspect} ==> #{res.body}.")
+          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Internal Server Error recieved while validating credentials)"
+
         else
-          $LOG.error("Unexpected response from Devise while validating credentials: #{res.inspect} ==> #{res.body}.")
-          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Unexpected response received while validating credentials)"
+          $LOG.error("Unexpected response code from Devise while validating credentials: #{res.inspect} ==> #{res.body}.")
+          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Unexpected response code received while validating credentials)"
         end
       end
 
     rescue Timeout::Error
-      $LOG.error("Devise did not respond to the credential validation request. We waited for #{wait_seconds.inspect} seconds before giving up.")
+      $LOG.error("Devise did not respond to the credential validation request. We waited for #{@options[:timeout]} seconds before giving up.")
       raise CASServer::AuthenticatorError, "Login server currently unavailable. (Timeout while waiting to validate credentials)"
     end
 
