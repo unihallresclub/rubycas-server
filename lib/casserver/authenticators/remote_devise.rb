@@ -26,7 +26,7 @@ require 'timeout'
 # to the extra attributes, it will be renamed to :username_devise.
 class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
   def self.setup(options)
-    raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:auth]
+    raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:url]
 
     @url = options[:url]
     @auth_model = options[:auth_options][:model] || 'user'
