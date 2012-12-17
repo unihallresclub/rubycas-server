@@ -6,7 +6,7 @@ require 'timeout'
 
 # Validates accounts against a remote Devise installation using its JSON API.
 #
-# For example:
+# Config example:
 #
 #   authenticator:
 #     class: CASServer::Authenticators::RemoteDevise
@@ -28,8 +28,8 @@ require 'timeout'
 #   timeout -- Number of seconds to wait for response from Devise. Defaults to 10 seconds.
 #
 # All user account attributes returned by API on successful auth are available as extra attributes.
-# To avoid conflicts, if a :username attribute is provided to the extra attributes, it will be renamed to
-# :username_devise.
+# To avoid conflicts, if a 'username' attribute is provided to the extra attributes, it will be renamed to
+# 'username_devise'.
 class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
   def self.setup(options)
     raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:url]
@@ -101,7 +101,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
 
         when Net::HTTPInternalServerError
           $LOG.error("Devise throws Internal Server Error while validating credentials: #{res.inspect} ==> #{res.body}.")
-          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Internal Server Error recieved while validating credentials)"
+          raise CASServer::AuthenticatorError, "Login server currently unavailable. (Internal Server Error received while validating credentials)"
 
         else
           $LOG.error("Unexpected response code from Devise while validating credentials: #{res.inspect} ==> #{res.body}.")
