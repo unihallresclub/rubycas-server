@@ -34,6 +34,14 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     @timeout = options[:timeout] || 10
   end
 
+  def configure(options)
+    super
+    @url = ''
+    @auth_model = ''
+    @auth_attribute = ''
+    @timeout = 0
+  end
+
   def validate(credentials)
     read_standard_credentials(credentials)
 
