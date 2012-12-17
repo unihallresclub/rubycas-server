@@ -71,7 +71,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
         end
 
         case res
-        when Net::HTTPSuccess, Net::HTTPForbidden
+        when Net::HTTPSuccess, Net::HTTPUnauthorized
 
           content_type = res['content-type'].split(';')[0]
           if content_type != 'application/json'
