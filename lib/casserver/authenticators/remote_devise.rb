@@ -34,18 +34,9 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
   def self.setup(options)
     raise CASServer::AuthenticatorError, "No Devise URL provided" unless options[:url]
 
-    @devise = {}
-    @devise[:model] = options[:devise][:model] || 'user'
-    @devise[:attribute] = options[:devise][:attribute] || 'email'
-    @request_timeout = options[:timeout] || 10
-  end
-
-  def self.devise
-    @devise
-  end
-
-  def self.request_timeout
-    @request_timeout
+    (options[:devise] ||= {})[:model] = options[:devise][:model] || 'user'
+    (options[:devise] ||= {})[:attribute] = options[:devise][:attribute] || 'email'
+    options[:timeout] = options[:timeout] || 10
   end
 
   def validate(credentials)
@@ -54,8 +45,8 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     return false if @username.blank? || @password.blank?
 
     auth_data = {
-      "#{devise[:model]}[#{devise[:attribute]}]"  => @username,
-      "#{devise[:model]}[password]"               => @password,
+      "#{@options[:devise][:model]}[#{@options[:devise][:attribute]}]"  => @username,
+      "#{@options[:devise][:model]}[password]"                          => @password,
     }
 
     url = URI.parse(@options[:url])
@@ -72,7 +63,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
     end
 
     begin
-      timeout(request_timeout) do
+      timeout(@options[:timeout]) do
         begin
           res = http.start do |conn|
             req = Net::HTTP::Post.new(url.path)
@@ -103,7 +94,7 @@ class CASServer::Authenticators::RemoteDevise < CASServer::Authenticators::Base
             raise CASServer::AuthenticatorError, json[:error]
           end
 
-          @extra_attributes = json[auth[:model].to_sym]
+          @extra_attributes = json[@options[:devise][:model].to_sym]
 
           if @extra_attributes[:username]
             @extra_attributes[:username_devise] = @extra_attributes[:username]
