@@ -32,6 +32,9 @@ For more information on RubyCAS-Server, see http://code.google.com/p/rubycas-ser
   s.add_dependency("sinatra", "~> 1.0")
   s.add_dependency("sinatra-r18n", '~> 1.1.0')
   s.add_dependency("crypt-isaac", "~> 0.9.1")
+  s.add_dependency("pg", "~> 0.14.1")
+  s.add_dependency("bcrypt-ruby", "~> 3.0.1")
+  s.add_dependency("haml", "~> 4.0.0")
 
   s.rdoc_options = [
     '--quiet', '--title', 'RubyCAS-Server Documentation', '--opname',
