@@ -35,30 +35,30 @@ For more information on RubyCAS-Server, see http://code.google.com/p/rubycas-ser
   s.add_dependency("sinatra-r18n", '~> 1.1.0')
   s.add_dependency("crypt-isaac", "~> 0.9.1")
 
-  s.add_development_dependency("rack-test")
-  s.add_development_dependency("capybara", '1.1.2')
-  s.add_development_dependency("rspec")
-  s.add_development_dependency("rspec-core")
-  s.add_development_dependency("rake", "0.8.7")
-  s.add_development_dependency("sqlite3", "~> 1.3.1")
-  s.add_development_dependency("appraisal", "~> 0.4.1")
-  s.add_development_dependency("guard", "~> 1.4.0")
-  s.add_development_dependency("guard-rspec", "2.0.0")
+  s.add_dependency("rack-test")
+  s.add_dependency("capybara", '1.1.2')
+  s.add_dependency("rspec")
+  s.add_dependency("rspec-core")
+  s.add_dependency("rake", "0.8.7")
+  s.add_dependency("sqlite3", "~> 1.3.1")
+  s.add_dependency("appraisal", "~> 0.4.1")
+  s.add_dependency("guard", "~> 1.4.0")
+  s.add_dependency("guard-rspec", "2.0.0")
 
   # pull in os specific FS monitoring lib for guard
   case RUBY_PLATFORM
   when /darwin/i
-    s.add_development_dependency("rb-fsevent", "~> 0.9.2")
+    s.add_dependency("rb-fsevent", "~> 0.9.2")
   when /linux/i
-    s.add_development_dependency("rb-inotify", "~> 0.8.8")
+    s.add_dependency("rb-inotify", "~> 0.8.8")
   when /mswin|bccwin|wince/i
-    s.add_development_dependency('wdm', '~> 0.0.3') if RUBY_VERSION >= '1.9.2'
-    s.add_development_dependency('win32console', "~> 1.3.2")
+    s.add_dependency('wdm', '~> 0.0.3') if RUBY_VERSION >= '1.9.2'
+    s.add_dependency('win32console', "~> 1.3.2")
   end
 
   # for authenticator specs
-  s.add_development_dependency("net-ldap", "~> 0.1.1")
-  s.add_development_dependency("activeresource", ">= 2.3.12", "< 4.0")
+  s.add_dependency("net-ldap", "~> 0.1.1")
+  s.add_dependency("activeresource", ">= 2.3.12", "< 4.0")
 
   s.rdoc_options = [
     '--quiet', '--title', 'RubyCAS-Server Documentation', '--opname',
